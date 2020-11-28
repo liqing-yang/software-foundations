@@ -2146,7 +2146,11 @@ Proof.
     lists (with elements of type X) that have no elements in
     common. *)
 
-(* FILL IN HERE *)
+Inductive disjoint {X:Type} : list X -> list X -> Prop :=
+  | d_1 : disjoint [] []
+  | d_2 x l1 l2 (H1: ~(In x l2)) (H2: disjoint l1 l2): disjoint (x :: l1) l2 
+  | d_3 x l1 l2 (H1: ~(In x l1)) (H2: disjoint l1 l2): disjoint l1 (x :: l2)
+  .
 
 (** Next, use [In] to define an inductive proposition [NoDup X
     l], which should be provable exactly when [l] is a list (with
@@ -2155,12 +2159,30 @@ Proof.
     bool []] should be provable, while [NoDup nat [1;2;1]] and
     [NoDup bool [true;true]] should not be.  *)
 
-(* FILL IN HERE *)
+Inductive NoDup {X:Type} : list X -> Prop := 
+  | n_1 : NoDup []
+  | n_2 x l (H1: ~(In x l)) (H2: NoDup l): NoDup (x :: l)
+  .
 
 (** Finally, state and prove one or more interesting theorems relating
     [disjoint], [NoDup] and [++] (list append).  *)
 
-(* FILL IN HERE *)
+Theorem interesting : forall X (l1 l2 : list X), 
+  NoDup (l1 ++ l2) -> disjoint l1 l2. (* 反过来是不成立的！ *)
+Proof.
+  intros X l1. induction l1.
+  - intros. induction l2.
+    + apply d_1.
+    + apply d_3. 
+      * intros contra. destruct contra.
+      * apply IHl2. simpl. simpl in H. inversion H. apply H3.
+  - intros. apply d_2. 
+    + intros H1. inversion H. assert (H5: In x (l1 ++ l2)).
+      { apply In_app_iff. right. apply H1. }
+      apply H3 in H5. apply H5.
+    + apply IHl1. inversion H. apply H3.
+Qed.
+
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_NoDup_disjoint_etc : option (nat*string) := None.
@@ -2180,13 +2202,20 @@ Lemma in_split : forall (X:Type) (x:X) (l:list X),
   In x l ->
   exists l1 l2, l = l1 ++ x :: l2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction l as [| x' l' IHl].
+  - intros. destruct H.
+  - intros. destruct H.
+    * rewrite H. exists []. exists l'. reflexivity.
+    * apply IHl in H. destruct H as [ln [lm H]].
+      exists (x' :: ln). exists lm. simpl. rewrite H. reflexivity.
+Qed.
 
 (** Now define a property [repeats] such that [repeats X l] asserts
     that [l] contains at least one repeated element (of type [X]).  *)
 
 Inductive repeats {X:Type} : list X -> Prop :=
-  (* FILL IN HERE *)
+  | r_1 x l (H: In x l) : repeats (x :: l)
+  | r_2 x l (H: repeats l) : repeats (x :: l)
 .
 
 (* Do not modify the following line: *)
