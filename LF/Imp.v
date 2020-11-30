@@ -446,13 +446,23 @@ Admitted.
     it is sound.  Use the tacticals we've just seen to make the proof
     as elegant as possible. *)
 
-Fixpoint optimize_0plus_b (b : bexp) : bexp
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with 
+  | BTrue => BTrue 
+  | BFalse => BFalse 
+  | BEq a1 a2 => BEq (optimize_0plus a1) (optimize_0plus a2)
+  | BLe a1 a2 => BLe (optimize_0plus a1) (optimize_0plus a2)
+  | BNot b => BNot (optimize_0plus_b b)
+  | BAnd b1 b2 => BAnd (optimize_0plus_b b1) (optimize_0plus_b b2)
+  end.
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction b;
+  try simpl; repeat (rewrite optimize_0plus_sound); 
+  try (rewrite IHb); try (rewrite IHb1; rewrite IHb2); try reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (optimize)
@@ -464,6 +474,43 @@ Proof.
     find it easiest to start small -- add just a single, simple
     optimization and its correctness proof -- and build up to
     something more interesting incrementially.)  *)
+
+Fixpoint optimize_0plus_adv (a:aexp) : aexp :=
+  match a with
+  | ANum n => ANum n
+  | APlus (ANum 0) e2 => optimize_0plus_adv e2
+  | APlus e1 e2 => APlus  (optimize_0plus_adv e1) (optimize_0plus_adv e2)
+  | AMinus e1 (ANum 0) => optimize_0plus_adv e1 
+  | AMinus e1 e2 => AMinus (optimize_0plus_adv e1) (optimize_0plus_adv e2)
+  | AMult (ANum 0) _ => ANum 0
+  | AMult _ (ANum 0) => ANum 0 
+  | AMult e1 e2 => AMult (optimize_0plus_adv e1) (optimize_0plus_adv e2)
+  end.
+
+Theorem adv_sound : forall a, aeval (optimize_0plus_adv a) = aeval a.
+Proof.
+  induction a;
+  simpl; try reflexivity.
+  - destruct a1;
+      try (rewrite <- IHa1; rewrite <- IHa2; simpl; reflexivity);
+      try (destruct n; simpl; rewrite IHa2; reflexivity).
+  - destruct a2;
+      try (rewrite <- IHa1; rewrite <- IHa2; simpl; reflexivity).
+    * destruct n. 
+      + simpl. rewrite Nat.sub_0_r. assumption. 
+      + simpl. rewrite IHa1. reflexivity.
+  - destruct a1;
+      try (destruct a2; simpl; rewrite <- IHa1; rewrite <- IHa2; reflexivity).
+Admitted.
+  (*
+  - destruct a1 eqn:Ha1.
+    * destruct n; simpl; rewrite IHa2; reflexivity.
+    * rewrite <- IHa1. rewrite <- IHa2. simpl. reflexivity.
+    * rewrite <- IHa1. rewrite <- IHa2. simpl. reflexivity.
+    *
+      + simpl. rewrite IHa2. reflexivity.
+      懒得写
+*)
 
 (* FILL IN HERE
 
@@ -742,7 +789,34 @@ Inductive aevalR : aexp -> nat -> Prop :=
     end.
 
     Write out a corresponding definition of boolean evaluation as a
-    relation (in inference rule notation). *)
+    relation (in inference rule notation).
+
+    ---------------
+    BTrue ==>b true
+
+    ------------------
+    BFalse ==>b false 
+
+      a1 ==> n1
+      a2 ==> n2
+    -----------------------
+    BEq a1 a2 ==>b n1 =? n2
+    
+      a1 ==> n1
+      a2 ==> n2
+    ------------------------
+    BLe a1 a2 ==>b n1 <=? n2
+
+      e ==>b b
+    ------------------
+    BNot e ==>b negb b
+
+      e1 ==>b b1
+      e2 ==>b b2
+    --------------------------
+    BAnd e1 e2 ==>b andb b1 b2
+
+ *)
 (* FILL IN HERE *)
 
 (* Do not modify the following line: *)
@@ -808,19 +882,49 @@ Qed.
 
 (** **** Exercise: 3 stars, standard (bevalR)
 
+  Fixpoint beval (e : bexp) : bool :=
+    match e with
+    | BTrue       => true
+    | BFalse      => false
+    | BEq a1 a2   => (aeval a1) =? (aeval a2)
+    | BLe a1 a2   => (aeval a1) <=? (aeval a2)
+    | BNot b      => negb (beval b)
+    | BAnd b1 b2  => andb (beval b1) (beval b2)
+    end.
+
     Write a relation [bevalR] in the same style as
     [aevalR], and prove that it is equivalent to [beval]. *)
 
 Reserved Notation "e '==>b' b" (at level 90, left associativity).
 Inductive bevalR: bexp -> bool -> Prop :=
-(* FILL IN HERE *)
-where "e '==>b' b" := (bevalR e b) : type_scope
+  | E_BTrue : BTrue ==>b true
+  | E_BFalse : BFalse ==>b false 
+  | E_BEq (a1 a2: aexp) (n1 n2: nat) :
+      (a1 ==> n1) -> (a2 ==> n2) -> (BEq a1 a2 ==>b n1 =? n2)
+  | E_BLe (a1 a2: aexp) (n1 n2: nat) :
+      (a1 ==> n1) -> (a2 ==> n2) -> (BLe a1 a2 ==>b n1 <=? n2)
+  | E_BNot (e: bexp) (b: bool) : 
+      (e ==>b b) -> (BNot e ==>b negb b)
+  | E_BAnd (e1 e2: bexp) (b1 b2: bool) :
+      (e1 ==>b b1) -> (e2 ==>b b2) -> (BAnd e1 e2) ==>b (andb b1 b2)
+
+  where "e '==>b' b" := (bevalR e b) : type_scope
 .
 
 Lemma beval_iff_bevalR : forall b bv,
   b ==>b bv <-> beval b = bv.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split.
+  - intros H; induction H; simpl; subst; 
+      try (apply aeval_iff_aevalR in H); try (apply aeval_iff_aevalR in H0);
+      try (rewrite H; rewrite H0); reflexivity.
+  - generalize dependent bv. 
+    induction b; simpl; intros; subst; constructor; 
+      try (rewrite aeval_iff_aevalR); 
+      try (apply IHb); try (apply IHb1); try (apply IHb2);
+      try reflexivity.
+Qed.
+
 (** [] *)
 
 End AExp.
