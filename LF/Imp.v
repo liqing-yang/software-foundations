@@ -1609,7 +1609,12 @@ Example ceval_example2:
     Z := 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_Seq with (X !-> 0).
+  - apply E_Ass. reflexivity.
+  - apply E_Seq with ((Y !-> 1 ; X !-> 0)).
+    * apply E_Ass. reflexivity.
+    * apply E_Ass. reflexivity.
+Qed.
 (** [] *)
 
 Set Printing Implicit.
@@ -1623,15 +1628,29 @@ Check @ceval_example2.
     which you can reverse-engineer to discover the program you should
     write.  The proof of that theorem will be somewhat lengthy. *)
 
-Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition pup_to_n : com :=
+  <{ Y := 0;
+     while ~(X = 0) do 
+       Y := Y + X;
+       X := X - 1
+     end }>.
 
 Theorem pup_to_2_ceval :
   (X !-> 2) =[
     pup_to_n
   ]=> (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_Seq with (Y !-> 0; X !-> 2).
+  - apply E_Ass. reflexivity.
+  - apply E_WhileTrue with (X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
+    * simpl. reflexivity.
+    * apply E_Seq with (Y !-> 2 ; Y !-> 0 ; X !-> 2); apply E_Ass; reflexivity.
+    * apply E_WhileTrue with (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
+      + simpl. reflexivity.
+      + apply E_Seq with (Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2); apply E_Ass; reflexivity.
+      + apply E_WhileFalse. simpl. reflexivity.
+Qed.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -1706,7 +1725,14 @@ Proof.
 
     State and prove a specification of [XtimesYinZ]. *)
 
-(* FILL IN HERE *)
+Theorem XtimesYinZ_spec: forall st m n st',
+  st X = m -> st Y = n -> 
+  st =[ XtimesYinZ ]=> st' ->
+  st' Z = m * n.
+Proof.
+  intros st m n st' HX HY Heval.
+  inversion Heval. subst. simpl. apply t_update_eq.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_XtimesYinZ_spec : option (nat*string) := None.
@@ -1724,8 +1750,12 @@ Proof.
       [loopdef] terminates.  Most of the cases are immediately
       contradictory (and so can be solved in one step with
       [discriminate]). *)
+  
+  induction contra; try (inversion Heqloopdef).
+  - rewrite H1 in H. discriminate H.
+  - subst. apply IHcontra2. reflexivity.
+Qed. 
 
-  (* FILL IN HERE *) Admitted.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (no_whiles_eqv)
@@ -1752,13 +1782,24 @@ Fixpoint no_whiles (c : com) : bool :=
     while loops.  Then prove its equivalence with [no_whiles]. *)
 
 Inductive no_whilesR: com -> Prop :=
- (* FILL IN HERE *)
+  | NW_CSkip : no_whilesR CSkip
+  | NW_CAss x a : no_whilesR (CAss x a)
+  | NW_CSeq c1 c2 : 
+      no_whilesR c1 -> no_whilesR c2 -> (no_whilesR (CSeq c1 c2))
+  | NW_CIf b c1 c2 : 
+      no_whilesR c1 -> no_whilesR c2 -> no_whilesR (CIf b c1 c2)
 .
 
 Theorem no_whiles_eqv:
    forall c, no_whiles c = true <-> no_whilesR c.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split; intros H; induction c; try constructor;
+    try (inversion H; rewrite andb_true_iff in H1; destruct H1 as [L R]; try (apply IHc1 in L); try (apply IHc2 in R); assumption);
+    try (inversion H; subst; simpl).
+    - apply IHc1 in H2. apply IHc2 in H3. rewrite H2. rewrite H3. reflexivity.
+    - apply IHc1 in H2. apply IHc2 in H4. rewrite H2. rewrite H4. reflexivity.
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 4 stars, standard (no_whiles_terminating)
@@ -1768,7 +1809,22 @@ Proof.
 
     Use either [no_whiles] or [no_whilesR], as you prefer. *)
 
-(* FILL IN HERE *)
+Theorem no_whiles_terminating : forall c st,
+  no_whilesR c -> 
+  exists st', st =[c]=> st'.
+Proof.
+  intros. generalize dependent st. induction H; intros.
+  - exists st. constructor.
+  - exists (x !-> (aeval st a); st). constructor. reflexivity.
+  - destruct IHno_whilesR1 with st as [st' H1].
+    destruct IHno_whilesR2 with st' as [st'' H2].
+    exists st''. apply E_Seq with st'. apply H1. apply H2.
+  - destruct (beval st b) eqn:Hb.
+    + destruct IHno_whilesR1 with st as [st' H1].
+    exists st'. apply E_IfTrue. apply Hb. apply H1.
+    + destruct IHno_whilesR2 with st as [st' H2].
+      exists st'. apply E_IfFalse. apply Hb. apply H2.
+Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_no_whiles_terminating : option (nat*string) := None.
