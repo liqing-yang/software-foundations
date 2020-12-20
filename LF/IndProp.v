@@ -2115,8 +2115,13 @@ Qed.
 
 Lemma rev_pal_lemma : forall X (l:list X),
   l = rev l ->
-  (exists x l', l = [x] ++ l' ++ [x]) \/ l = [].
-Proof. Admitted.
+  (exists x l', l = [x] ++ l' ++ [x] /\ pal l') \/ l = [].
+Proof. 
+  intros X. induction l.
+  - intros. right. reflexivity.
+  - intros H.
+
+Admitted.
 
 Theorem rev_pal : forall X (l:list X), l = rev l -> pal l.
 Proof.
