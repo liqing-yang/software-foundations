@@ -355,6 +355,11 @@ From PLF Require Import MoreStlc.
     execution.  (Use informal syntax.  No need to prove formally that
     the application gets stuck.)
 
+    Person  = {name:String, age:Nat}
+    Student = {name:String, age:Nat, gpa:Nat}
+
+    suppose 'f : Student -> Nat = return f.gpa'
+    f will receive a person. however the person does not have the field gpa...
 *)
 
 (* Do not modify the following line: *)
@@ -436,18 +441,33 @@ Definition manual_grade_for_arrow_sub_wrong : option (nat*string) := None.
     ([A], [B], and [C] here are base types like [Bool], [Nat], etc.)
 
     - [T->S <: T->S]
+    true
 
     - [Top->U <: S->Top]
+    S <: Top   U <: Top
+    true
 
     - [(C->C) -> (A*B)  <:  (C->C) -> (Top*B)]
+    (C->C) <: (C->C)    (A*B) <: (Top*B)
+    true
 
     - [T->T->U <: S->S->V]
-
+    S <: T    (S->V) <: (T->U)
+              T <: S ??? false
+            
     - [(T->T)->U <: (S->S)->V]
+    (S->S) <: (T->T)    U <: V
+    false
 
     - [((T->S)->T)->U <: ((S->T)->S)->V]
+    ((S->T)->S) <: ((T->S)->T)    U <: V
+    S <: T    (T->S) <: (S->T)
+              S <: T    S <: T
+    true 
 
     - [S*V <: T*U]
+    S <: T    V <: U
+    false
 
     [] *)
 
@@ -462,9 +482,15 @@ Definition manual_grade_for_arrow_sub_wrong : option (nat*string) := None.
 
 Write these types in order from the most specific to the most general.
 
+Top -> Student <: Person -> Student <: Student -> Person <: Student -> Top <: Top 
+
 Where does the type [Top->Top->Student] fit into this order?
 That is, state how [Top -> (Top -> Student)] compares with each
 of the five types above. It may be unrelated to some of them.  
+
+Top -> (Top -> Student) <: Top
+Top -> (Top -> Student) <: Student -> Top
+
 *)
 
 (* Do not modify the following line: *)
@@ -479,27 +505,36 @@ Definition manual_grade_for_subtype_order : option (nat*string) := None.
       forall S T,
           S <: T  ->
           S->S   <:  T->T
+      false
 
       forall S,
            S <: A->A ->
            exists T,
               S = T->T  /\  T <: A
+      true 
+      T = A
+      S = A->A /\ A <: A
 
       forall S T1 T2,
            (S <: T1 -> T2) ->
            exists S1 S2,
               S = S1 -> S2  /\  T1 <: S1  /\  S2 <: T2 
+      true S = T1 -> T2
 
       exists S,
            S <: S->S 
+      false, we don't have bottom
 
       exists S,
            S->S <: S  
+      true 
+      S = Top
 
       forall S T1 T2,
            S <: T1*T2 ->
            exists S1 S2,
               S = S1*S2  /\  S1 <: T1  /\  S2 <: T2  
+      true S = T1*T2
 *)
 
 (* Do not modify the following line: *)
@@ -510,30 +545,42 @@ Definition manual_grade_for_subtype_instances_tf_2 : option (nat*string) := None
 
     Which of the following statements are true, and which are false?
     - There exists a type that is a supertype of every other type.
+    true Top
 
     - There exists a type that is a subtype of every other type.
+    false 
 
     - There exists a pair type that is a supertype of every other
       pair type.
+    Top*Top
 
     - There exists a pair type that is a subtype of every other
       pair type.
+    false
 
     - There exists an arrow type that is a supertype of every other
       arrow type.
+    false
 
     - There exists an arrow type that is a subtype of every other
       arrow type.
+    false
 
     - There is an infinite descending chain of distinct types in the
       subtype relation---that is, an infinite sequence of types
       [S0], [S1], etc., such that all the [Si]'s are different and
       each [S(i+1)] is a subtype of [Si].
+    true
+    S0 = Top
+    {} {a} {a,b,c} {a,b,c,d} ... 
 
     - There is an infinite _ascending_ chain of distinct types in
       the subtype relation---that is, an infinite sequence of types
       [S0], [S1], etc., such that all the [Si]'s are different and
       each [S(i+1)] is a supertype of [Si].
+      true
+      S0 = Top -> Top
+      {}->Top {a}->Top {a,b}->Top {a,b,c}->Top ...
 
 *)
 
@@ -552,6 +599,7 @@ Definition manual_grade_for_subtype_concepts_tf : option (nat*string) := None.
          ~(T = Bool \/ exists n, T = Base n) ->
          exists S,
             S <: T  /\  S <> T
+    没看懂题里的base n
 *)
 
 (* Do not modify the following line: *)
@@ -565,9 +613,9 @@ Definition manual_grade_for_proper_subtypes : option (nat*string) := None.
      type.)
 
        empty |- (\p:T*Top. p.fst) ((\z:A.z), unit) \in A->A
-
+    A->A
    - What is the _largest_ type [T] that makes the same assertion true?
-
+   Top
 *)
 
 (* Do not modify the following line: *)
@@ -579,9 +627,9 @@ Definition manual_grade_for_small_large_1 : option (nat*string) := None.
      assertion true?
 
        empty |- (\p:(A->A * B->B). p) ((\z:A.z), (\z:B.z)) \in T
-
+  A->A * B->B
    - What is the _largest_ type [T] that makes the same assertion true?
-
+    Top
 *)
 
 (* Do not modify the following line: *)
@@ -593,9 +641,9 @@ Definition manual_grade_for_small_large_2 : option (nat*string) := None.
      assertion true?
 
        a:A |- (\p:(A*T). (p.snd) (p.fst)) (a, \z:A.z) \in A
-
+    A -> A
    - What is the _largest_ type [T] that makes the same assertion true?
-
+    Top?
     [] *)
 
 (** **** Exercise: 2 stars, standard (small_large_4)
@@ -604,7 +652,7 @@ Definition manual_grade_for_small_large_2 : option (nat*string) := None.
 
        exists S,
          empty |- (\p:(A*T). (p.snd) (p.fst)) \in S
-
+    T = A->A  \\
    - What is the _largest_ type [T] that makes the same
      assertion true?
 
@@ -633,6 +681,7 @@ Definition manual_grade_for_smallest_1 : option (nat*string) := None.
     assertion true?
 
       empty |- (\x:Top. x) ((\z:A.z) , (\z:B.z)) \in T
+      A->A * B->B
 *)
 
 (* Do not modify the following line: *)
@@ -646,6 +695,22 @@ Definition manual_grade_for_smallest_2 : option (nat*string) := None.
     T]?  (We consider two types to be different if they are written
     differently, even if each is a subtype of the other.  For example,
     [{x:A,y:B}] and [{y:B,x:A}] are different.)
+
+    {x:A, y:C->C} <: {x:A} <: {x:Top} <: Top
+
+    {x:A, y:C->C} <: {y:C->C} <: {y:C->Top} <: {y:Top} <: Top
+
+    {x:A, y:C->C} <: {x:A, y:C->C}
+    {x:A, y:C->C} <: {x:A, y:C->Top}
+    {x:A, y:C->C} <: {x:A, y:Top}
+    3*2=6
+
+    {x:A, y:C->C} <: {x:Top, y:C->C}
+    {x:A, y:C->C} <: {x:Top, y:C->Top}
+    {x:A, y:C->C} <: {x:Top, y:Top}
+    3*2=6
+
+    6+6+6
 
     [] *)
 
@@ -664,6 +729,11 @@ Definition manual_grade_for_smallest_2 : option (nat*string) := None.
                                    T1*T2 <: T2*T1
 
     for products.  Is this a good idea? Briefly explain why or why not.
+    No 
+    suppose we have A*C <: B*D
+    without the new rule, we know A <: B and C <: D
+    however, with the permutation rule
+    we cannot know whether is A <: B \/ C <: D or A <: D \/ C <: B
 
 *)
 
@@ -701,6 +771,7 @@ Inductive ty : Type :=
   | Ty_Base  : string -> ty
   | Ty_Arrow : ty -> ty -> ty
   | Ty_Unit  : ty
+  | Ty_Prod  : ty -> ty -> ty
 .
 
 Inductive tm : Type :=
@@ -711,6 +782,9 @@ Inductive tm : Type :=
   | tm_false : tm
   | tm_if : tm -> tm -> tm -> tm
   | tm_unit : tm 
+  | tm_pair : tm -> tm -> tm 
+  | tm_fst : tm -> tm 
+  | tm_snd : tm -> tm
 .
 
 Declare Custom Entry stlc.
@@ -738,6 +812,14 @@ Notation "'true'"  := true (at level 1).
 Notation "'true'"  := tm_true (in custom stlc at level 0).
 Notation "'false'"  := false (at level 1).
 Notation "'false'"  := tm_false (in custom stlc at level 0).
+
+Notation "X * Y" :=
+  (Ty_Prod X Y) (in custom stlc at level 2, X custom stlc, Y custom stlc at level 0).
+Notation "( x ',' y )" := (tm_pair x y) (in custom stlc at level 0,
+                                                x custom stlc at level 99,
+                                                y custom stlc at level 99).
+Notation "t '.fst'" := (tm_fst t) (in custom stlc at level 0).
+Notation "t '.snd'" := (tm_snd t) (in custom stlc at level 0).
 
 Notation "'Unit'" :=
   (Ty_Unit) (in custom stlc at level 0).
@@ -769,6 +851,9 @@ Fixpoint subst (x : string) (s : tm) (t : tm) : tm :=
       <{false}>
   | <{if t1 then t2 else t3}> =>
       <{if ([x:=s] t1) then ([x:=s] t2) else ([x:=s] t3)}>
+  | <{(t1,t2)}> => <{ ([x:=s]t1, [x:=s]t2) }>
+  | <{ t.fst }> => <{ ([x:=s]t).fst }>
+  | <{ t.snd }> => <{ ([x:=s]t).snd }>
   | <{unit}> =>
       <{unit}> 
   end
@@ -788,6 +873,10 @@ Inductive value : tm -> Prop :=
       value <{false}>
   | v_unit :
       value <{unit}>
+  | v_pair : forall v1 v2,
+      value v1 ->
+      value v2 ->
+      value <{(v1, v2)}>
 .
 
 Hint Constructors value : core.
@@ -812,6 +901,28 @@ Inductive step : tm -> tm -> Prop :=
   | ST_If : forall t1 t1' t2 t3,
       t1 --> t1' ->
       <{if t1 then t2 else t3}> --> <{if t1' then t2 else t3}>
+  (* pairs *)
+  | ST_Pair1 : forall t1 t1' t2,
+    t1 --> t1' -> 
+    <{ (t1, t2) }> --> <{ (t1', t2) }>
+  | ST_Pair2 : forall v1 t2 t2',
+    value v1 -> 
+    t2 --> t2' ->
+    <{ (v1, t2) }> --> <{ (v1, t2') }>
+  | ST_Fst1 : forall t1 t1',
+    t1 --> t1' ->
+    <{ t1.fst }> --> <{ t1'.fst }>
+  | ST_FstPair : forall v1 v2,
+    value v1 -> 
+    value v2 -> 
+    <{ (v1, v2).fst }> --> <{ v1 }>
+  | ST_Snd1 : forall t1 t1',
+    t1 --> t1' -> 
+    <{ t1.snd }> --> <{ t1'.snd }>
+  | ST_SndPair : forall v1 v2,
+    value v1 -> 
+    value v2 -> 
+    <{ (v1, v2).snd }> --> <{ v2 }>
 where "t '-->' t'" := (step t t').
 
 Hint Constructors step : core.
@@ -841,6 +952,11 @@ Inductive subtype : ty -> ty -> Prop :=
       T1 <: S1 ->
       S2 <: T2 ->
       <{S1->S2}> <: <{T1->T2}>
+  | S_Prod : forall S1 S2 T1 T2,
+      S1 <: T1 -> 
+      S2 <: T2 -> 
+      <{S1*S2}> <: <{T1*T2}>
+
 where "T '<:' U" := (subtype T U).
 
 (** Note that we don't need any special rules for base types ([Bool]
@@ -884,23 +1000,24 @@ Proof. auto. Qed.
     Employee := { name : String ; ssn : Integer }
 *)
 Definition Person : ty
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+  := <{String*Top}>.
 Definition Student : ty
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+  := <{String*Float}>.
 Definition Employee : ty
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+  := <{String*Integer}>.
 
 (** Now use the definition of the subtype relation to prove the following: *)
 
 Example sub_student_person :
   Student <: Person.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold Student, Person. auto. Qed.
 
 Example sub_employee_person :
   Employee <: Person.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold Employee, Person. auto. Qed.
+
 (** [] *)
 
 (** The following facts are mostly easy to prove in Coq.  To get
@@ -911,14 +1028,16 @@ Proof.
 Example subtyping_example_1 :
   <{Top->Student}> <:  <{(C->C)->Person}>.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  constructor...
+  apply sub_student_person. Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard, optional (subtyping_example_2) *)
 Example subtyping_example_2 :
   <{Top->Person}> <: <{Person->Top}>.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  constructor...
+Qed.
 (** [] *)
 
 End Examples.
@@ -958,6 +1077,19 @@ Inductive has_type : context -> tm -> ty -> Prop :=
        Gamma |- if t1 then t2 else t3 \in T1
   | T_Unit : forall Gamma,
       Gamma |- unit \in Unit
+
+    (* pairs *)
+  | T_Pair : forall Gamma t1 T1 t2 T2,
+    Gamma |- t1 \in T1 -> 
+    Gamma |- t2 \in T2 -> 
+    Gamma |- (t1, t2) \in (T1 * T2)
+  | T_Fst : forall Gamma t T1 T2,
+    Gamma |- t \in (T1 * T2) -> 
+    Gamma |- t.fst \in T1
+  | T_Snd : forall Gamma t T1 T2,
+    Gamma |- t \in (T1 * T2) -> 
+    Gamma |- t.snd \in T2
+
   (* New rule of subsumption: *)
   | T_Sub : forall Gamma t1 T1 T2,
       Gamma |- t1 \in T1 ->
@@ -978,13 +1110,24 @@ Import Examples.
 (** **** Exercise: 1 star, standard, optional (typing_example_0) *)
 (* empty |- ((\z:A.z), (\z:B.z))
          \in (A->A * B->B) *)
-(* FILL IN HERE
+Theorem typing_example_0 :
+empty |- ((\z:A,z), (\z:B,z)) \in ((A->A) * (B->B)).
+Proof.
+  apply T_Pair; apply T_Abs; auto. Qed.
 
-    [] *)
 
 (** **** Exercise: 2 stars, standard, optional (typing_example_1) *)
 (* empty |- (\x:(Top * B->B). x.snd) ((\z:A.z), (\z:B.z))
          \in B->B *)
+
+Theorem typing_example_1 :
+empty |- (\x:(Top * (B->B)), x.snd) ((\z:A,z), (\z:B,z))
+         \in (B->B).
+Proof.
+  eapply T_App.
+  - eapply T_Abs. eauto.
+  - eapply T_Sub. apply typing_example_0. auto.
+Qed.
 (* FILL IN HERE
 
     [] *)
@@ -993,9 +1136,16 @@ Import Examples.
 (* empty |- (\z:(C->C)->(Top * B->B). (z (\x:C.x)).snd)
               (\z:C->C. ((\z:A.z), (\z:B.z)))
          \in B->B *)
-(* FILL IN HERE
+Theorem typing_example_2 : 
+empty |- (\z:(C->C)->(Top * (B->B)), (z (\x:C,x)).snd)
+              (\z:(C->C), ((\x:A,x), (\y:B,y)))
+         \in (B->B).
+Proof with eauto.
+  eapply T_App.
+  - eapply T_Abs. eapply T_Snd...
+  - eapply T_Abs. eapply T_Pair...
+Qed. 
 
-    [] *)
 
 End Examples2.
 
@@ -1033,7 +1183,10 @@ Lemma sub_inversion_Bool : forall U,
 Proof with auto.
   intros U Hs.
   remember <{Bool}> as V.
-  (* FILL IN HERE *) Admitted.
+  induction Hs; try solve_by_invert... 
+  assert (H: U=T)... subst...
+Qed.
+
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (sub_inversion_arrow) *)
@@ -1045,7 +1198,27 @@ Proof with eauto.
   intros U V1 V2 Hs.
   remember <{V1->V2}> as V.
   generalize dependent V2. generalize dependent V1.
-  (* FILL IN HERE *) Admitted.
+  induction Hs; intros; try solve_by_invert...
+  - apply IHHs2 in HeqV. destruct HeqV as [U1 [U2 [H1 [H2 H3]]]].
+    apply IHHs1 in H1. destruct H1 as [U1' [U2' [H1' [H2' H3']]]].
+    exists U1'. exists U2'...
+  - inversion HeqV. subst. exists S1. exists S2...
+Qed.
+
+Lemma sub_inversion_prod : forall U V1 V2,
+     U <: <{V1*V2}> ->
+     exists U1, exists U2,
+       U = <{U1*U2}> /\ (U1 <: V1) /\ (U2 <: V2).
+Proof with eauto.
+  intros.
+  remember (Ty_Prod V1 V2) as V.
+  generalize dependent V2. generalize dependent V1.
+  induction H; intros; try solve_by_invert. exists V1...
+  apply IHsubtype2 in HeqV. destruct HeqV as [T1 [T2 [H1 [H2 H3]]]].
+  apply IHsubtype1 in H1. destruct H1 as [T1' [T2' [H1' [H2' H3']]]].
+  exists T1'... exists T2'... inversion HeqV; subst...
+Qed.
+  
 (** [] *)
 
 (* ================================================================= *)
@@ -1076,14 +1249,21 @@ Proof with eauto.
     type. *)
 
 (** **** Exercise: 3 stars, standard, optional (canonical_forms_of_arrow_types) *)
+
+(*https://github.com/fabriceleal/Software-Foundations-Solutions/blob/master/Sub.v*)
 Lemma canonical_forms_of_arrow_types : forall Gamma s T1 T2,
   Gamma |- s \in (T1->T2) ->
   value s ->
   exists x S1 s2,
      s = <{\x:S1,s2}>.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros. remember (<{T1->T2}>) as T.
+  generalize dependent T2. generalize dependent T1.
+  induction H; subst; intros; try solve_by_invert...
+  subst. apply sub_inversion_arrow in H1. 
+  destruct H1 as [U1 [U2 [H1 _]]].
+  eapply IHhas_type. apply H0. apply H1.
+Qed.
 
 (** Similarly, the canonical forms of type [Bool] are the constants
     [tm_true] and [tm_false]. *)
@@ -1098,6 +1278,20 @@ Proof with eauto.
   induction Hty; try solve_by_invert...
   - (* T_Sub *)
     subst. apply sub_inversion_Bool in H. subst...
+Qed.
+
+Lemma canonical_forms_of_prod_types : forall Gamma s T1 T2,
+  Gamma |- s \in (T1*T2) ->
+  value s ->
+  exists t1, exists t2, s = <{(t1,t2)}> /\ value t1 /\ value t2.
+Proof with eauto.
+  intros. remember (Ty_Prod T1 T2) as T.
+  generalize dependent T1. generalize dependent T2.
+  induction H; intros; try solve_by_invert...
+  - inversion HeqT; subst. inversion H0; subst.
+    exists t1. exists t2...
+  - subst. apply sub_inversion_prod in H1.
+    destruct H1 as [U1 [U2 [H' _]]]...
 Qed.
 
 (* ================================================================= *)
@@ -1187,6 +1381,32 @@ Proof with eauto.
     + apply canonical_forms_of_Bool in Ht1; [|assumption].
       destruct Ht1; subst...
     + destruct H. rename x into t1'. eauto. 
+  - (* T_Pair *)
+    destruct IHHt1. reflexivity.
+    + (* t1 is a value *)
+      destruct IHHt2. reflexivity.
+      * (* t2 is a value *) 
+        left...
+      * (* t2 can take a step *)
+        right. destruct H0 as [t2' H']. exists <{ (t1, t2') }>...
+    + (* t1 can take a step *)
+      right. destruct H as [t1' H']. exists <{ (t1', t2)}>...
+  - (* T_Fst *)
+    destruct IHHt. reflexivity. 
+    + (* t is a value *)
+      right. inversion Ht; subst; try (solve_by_invert)...
+      * inversion H...
+      * destruct (canonical_forms_of_prod_types empty t T1 T2) as [t1 [t2 [Hs [Hv1 Hv2]]]]...
+        subst. exists t1...
+    + (* t can take a step *) 
+      right. inversion H...
+  - (* T_Snd *)
+    destruct IHHt. reflexivity. 
+    + right. inversion Ht; subst; try (solve_by_invert)...
+      * inversion H...
+      * destruct (canonical_forms_of_prod_types empty t T1 T2) as [t1 [t2 [Hs [Hv1 Hv2]]]]...
+        subst. exists t2...
+    + inversion H...
 Qed.
 
 (* ================================================================= *)
@@ -1242,7 +1462,7 @@ Proof with eauto.
   induction H;
     inversion Heqt; subst; intros; try solve_by_invert.
   - (* T_Abs *)
-    exists T1...
+    rename T1 into T12. exists T12...
   - (* T_Sub *)
     destruct IHhas_type as [S2 [Hsub Hty]]...
   Qed.
@@ -1253,7 +1473,15 @@ Lemma typing_inversion_var : forall Gamma (x:string) T,
   exists S,
     Gamma x = Some S /\ S <: T.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  intros Gamma x T H.
+  remember (tm_var x) as t. 
+  induction H;
+  inversion Heqt; subst; intros; try solve_by_invert.
+  - (* T_Var *)
+    exists T1... 
+  - (* T_Sub *)
+    destruct IHhas_type as [T [H2 H3]]...
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (typing_inversion_app) *)
@@ -1263,8 +1491,35 @@ Lemma typing_inversion_app : forall Gamma t1 t2 T2,
     Gamma |- t1 \in (T1->T2) /\
     Gamma |- t2 \in T1.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  intros Gamma t1 t2 T H.
+  remember <{t1 t2}> as t.
+  induction H;
+    inversion Heqt; subst; intros; try solve_by_invert.
+  - (* T_App *)
+    exists T2...
+  - (* T_Sub *)
+    destruct IHhas_type as [T1' [H2 H3]]...
+Qed. 
 (** [] *)
+
+Lemma typing_inversion_prod : forall Gamma t1 t2 T,
+  Gamma |- (t1,t2) \in T ->
+  (exists S1, exists S2, 
+    <{S1*S2}> <: T /\
+    Gamma |- t1 \in S1 /\
+    Gamma |- t2 \in S2).
+Proof with eauto.
+  intros Gamma t1 t2 T H.
+  remember <{(t1,t2)}> as t.
+  induction H;
+    inversion Heqt; subst; intros; try solve_by_invert.
+  - (* T_Prod *) 
+    exists T1...
+  - (* T_Sub *)
+    destruct IHhas_type as [S1 [S2 [H2 [H3 H4]]]]...
+    exists S1...
+Qed.
+
 
 (** The inversion lemmas for typing and for subtyping between arrow
     types can be packaged up as a useful "combination lemma" telling
@@ -1319,13 +1574,23 @@ Lemma substitution_preserves_typing : forall Gamma x U t v T,
    (x |-> U ; Gamma) |- t \in T ->
    empty |- v \in U   ->
    Gamma |- [x:=v]t \in T.
-Proof.
-Proof.
+Proof with eauto.
   intros Gamma x U t v T Ht Hv.
   remember (x |-> U; Gamma) as Gamma'.
   generalize dependent Gamma.
   induction Ht; intros Gamma' G; simpl; eauto.
- (* FILL IN HERE *) Admitted.
+  - (* var *)
+    rename x0 into y.
+    destruct (eqb_stringP x y).
+    + subst. rewrite update_eq in H. inversion H. 
+      apply weakening_empty. subst...
+    + subst. rewrite update_neq in H...
+  - (* abs *)
+    rename x0 into y, t1 into t.
+    destruct (eqb_stringP x y).
+    + subst. apply T_Abs. rewrite update_shadow in Ht...
+    + apply T_Abs. apply IHHt. subst. apply update_permute...
+Qed.
 
 (* ================================================================= *)
 (** ** Preservation *)
@@ -1403,9 +1668,23 @@ Proof with eauto.
        and [eauto] takes care of them *)
     + (* ST_AppAbs *)
       destruct (abs_arrow _ _ _ _ _ HT1) as [HA1 HA2].
-      apply substitution_preserves_typing with T0... 
+      apply substitution_preserves_typing with T0...
+  - (* T_Fst *)
+    inversion HE; subst...
+    apply typing_inversion_prod in HT.
+    destruct HT as [S1 [S2 [H2 [H3 _]]]].
+    apply sub_inversion_prod in H2.
+    destruct H2 as [S1' [S2' [H' [H4 H5]]]].
+    inversion H'. subst...
+  - (* T_Snd *)
+    inversion HE; subst...
+    apply typing_inversion_prod in HT.
+    destruct HT as [S1 [S2 [H2 [_ H3]]]].
+    apply sub_inversion_prod in H2.
+    destruct H2 as [S1' [S2' [H' [H4 H5]]]].
+    inversion H'. subst...
 Qed.
-
+    
 (* ================================================================= *)
 (** ** Records, via Products and Top *)
 
@@ -1431,7 +1710,10 @@ Qed.
 
     The encoding of record values doesn't change at all.  It is
     easy (and instructive) to check that the subtyping rules above are
-    validated by the encoding. *)
+    validated by the encoding. 
+    
+    ** 没看懂 **
+    *)
 
 (* ================================================================= *)
 (** ** Exercises *)
@@ -1451,26 +1733,45 @@ Qed.
                     S1 <: T1     T1 <: S1      S2 <: T2
                     -----------------------------------    (T_Funny1)
                            Gamma |- t \in T1->T2
+    neither
+    S1 <: T1 /\ T1 <: S1 means S1 = T1
 
     - Suppose we add the following reduction rule:
 
                              --------------------         (ST_Funny21)
                              unit --> (\x:Top. x)
+    preservation
 
     - Suppose we add the following subtyping rule:
 
                                ----------------          (S_Funny3)
                                Unit <: Top->Top
+    (Top->Top)->Bool <: Unit->Bool
+    empty |- (\f:Top->Top, true) \in Unit->Bool
+
+    Bool->Unit <: Bool->(Top->Top)
+    empty |- (\x:Bool, unit) \in Bool->(Top->Top)
+
+    (Unit,Bool) <: (Top->Top,Bool)
+    empty |- (unit,true) \in (Top->Top,Bool)
+    看起来preservation没什么问题
+
+    progress become false
+    t = tm_app tm_unit tm_true : Top
+    不是value也没办法take a step...
 
     - Suppose we add the following subtyping rule:
 
                                ----------------          (S_Funny4)
                                Top->Top <: Unit
+    应该是neither？
 
     - Suppose we add the following reduction rule:
 
                              ---------------------      (ST_Funny5)
                              (unit t) --> (t unit)
+
+    没影响。。因为(unit t)一定ill-typed
 
     - Suppose we add the same reduction rule _and_ a new typing rule:
 
@@ -1479,13 +1780,19 @@ Qed.
 
                            --------------------------    (T_Funny6)
                            empty |- unit \in Top->Top
+    preservation
+    unit true : Top
+    true unit is ill-typed
 
     - Suppose we _change_ the arrow subtyping rule to:
 
                           S1 <: T1 S2 <: T2
                           -----------------              (S_Arrow')
                           S1->S2 <: T1->T2
-
+    preservation
+    t = (\f: (Top -> Unit), f true) (\u: Unit, unit) : Unit
+            (Top->Unit)->Unit          Unit->Unit
+    t' = (\u: Unit, unit) true : ??? ill-typed
 *)
 
 (* Do not modify the following line: *)
