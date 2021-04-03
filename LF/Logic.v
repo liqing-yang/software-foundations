@@ -1885,6 +1885,16 @@ Proof.
   - apply H1. intros H2. apply H0 in H2. destruct H2.
 Qed.
 
+Theorem em_to_raa :
+  excluded_middle -> double_negation_elimination.
+Proof.
+  unfold excluded_middle. unfold double_negation_elimination. unfold not.
+  intros H P'. intros nnp. assert (H2 : P' \/ ~ P'). { apply H. }
+  destruct H2.
+  - apply H0.
+  - exfalso. apply nnp. assumption.
+Qed.
+
 Theorem peirce_to_dne :
   peirce -> double_negation_elimination.
 Proof.
